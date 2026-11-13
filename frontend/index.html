@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clínica Veterinária</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header><h1>Clínica Veterinária</h1></header>
+
+  <main>
+    <section>
+      <h2>Espécies (teste da API)</h2>
+      <p id="status">Carregando...</p>
+      <ul id="lista-especies"></ul>
+
+      <form id="form-especie">
+        <input id="nome" placeholder="Nome da espécie" required>
+        <button type="submit">Adicionar</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script>
+    const status = document.getElementById("status");
+    const lista = document.getElementById("lista-especies");
+
+    async function carregar() {
+      try {
+        const especies = await api.get("/especies/");
+        status.textContent = "";
+        lista.innerHTML = especies.map(e => `<li>${e.nome}</li>`).join("");
+      } catch (erro) {
+        status.textContent = "Não foi possível falar com a API (ela está rodando na porta 5000?)";
+      }
+    }
+
+    document.getElementById("form-especie").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const nome = document.getElementById("nome");
+      await api.post("/especies/", { nome: nome.value });
+      nome.value = "";
+      carregar();
+    });
+
+    carregar();
+  </script>
+</body>
+</html>
