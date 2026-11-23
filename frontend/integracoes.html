@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Integração governo — Clínica Veterinária</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+    const conteudo = renderNav("integracoes");
+
+    conteudo.innerHTML = `
+      <div class="cabecalho-pagina">
+        <div>
+          <h1>Integração com o governo</h1>
+          <p>Cadastros de animais e vacinas antirrábicas enviados à API governamental simulada.</p>
+        </div>
+      </div>
+
+      <div class="cartao">
+        <div class="barra-ferramentas">
+          <select id="filtro-status">
+            <option value="">Todos os status</option>
+            <option value="PENDENTE">Pendente</option>
+            <option value="CONFIRMADO">Confirmado</option>
+            <option value="FALHA">Falha</option>
+          </select>
+          <button type="button" class="botao-secundario" id="atualizar">Atualizar</button>
+        </div>
+        <div id="area-tabela"></div>
+      </div>
+    `;
+
+    const SELO = { PENDENTE: "selo-azul", ENVIADO: "selo-azul", CONFIRMADO: "selo-verde", FALHA: "selo-vermelho" };
+    const ROTULO_TIPO = {
+      CADASTRO_ANIMAL: "Cadastro de animal",
+      ATUALIZACAO_ANIMAL: "Atualização de animal",
+      VACINA_ANTIRRABICA: "Vacina antirrábica",
+    };
+
+    async function reenviar(id, botao) {
+      botao.disabled = true;
+      botao.textContent = "Reenviando...";
+      try {
+        await api.post(`/integracoes/${id}/reenviar`);
+      } catch (erro) {
+        alert(erro.message);
+      }
+      carregar();
+    }
+
+    function linha(i) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escaparHtml(i.nome_animal)}</td>
+        <td>${ROTULO_TIPO[i.tipo_operacao] || i.tipo_operacao}</td>
+        <td><span class="selo ${SELO[i.status] || "selo-cinza"}">${i.status}</span></td>
+        <td>${escaparHtml(i.protocolo || "—")}</td>
+        <td class="numerico">${i.tentativas}</td>
+        <td>${formatarDataHora(i.ultima_tentativa || i.data_criacao)}</td>
+        <td class="acoes"></td>
+      `;
+      if (i.status === "FALHA") {
+        const botao = document.createElement("button");
+        botao.className = "botao-texto";
+        botao.textContent = "Reenviar";
+        botao.addEventListener("click", () => reenviar(i.id_integracao, botao));
+        tr.querySelector(".acoes").appendChild(botao);
+      }
+      if (i.mensagem_erro) {
+        const detalhe = document.createElement("tr");
+        detalhe.innerHTML = `<td colspan="7" class="texto-suave" style="font-size:0.82rem;padding-top:0">⚠ ${escaparHtml(i.mensagem_erro)}</td>`;
+        tr.after2 = detalhe; // marcador para inserir depois
+      }
+      return tr;
+    }
+
+    async function carregar() {
+      const area = document.getElementById("area-tabela");
+      area.innerHTML = '<div class="carregando">Carregando...</div>';
+      const status = document.getElementById("filtro-status").value;
+      const lista = await api.get(`/integracoes/${status ? "?status=" + status : ""}`);
+      if (lista.length === 0) {
+        area.innerHTML = '<div class="tabela-vazia">Nenhuma integração registrada ainda. Cadastre um animal ou registre uma vacina antirrábica para ver algo aqui.</div>';
+        return;
+      }
+      const tabela = document.createElement("table");
+      tabela.innerHTML = `
+        <thead><tr><th>Animal</th><th>Operação</th><th>Status</th><th>Protocolo</th>
+        <th>Tentativas</th><th>Última tentativa</th><th></th></tr></thead>
+        <tbody></tbody>
+      `;
+      const corpo = tabela.querySelector("tbody");
+      lista.forEach((i) => {
+        const tr = linha(i);
+        corpo.appendChild(tr);
+        if (tr.after2) corpo.appendChild(tr.after2);
+      });
+      area.innerHTML = "";
+      area.appendChild(tabela);
+    }
+
+    document.getElementById("filtro-status").addEventListener("change", carregar);
+    document.getElementById("atualizar").addEventListener("click", carregar);
+    carregar();
+  </script>
+</body>
+</html>

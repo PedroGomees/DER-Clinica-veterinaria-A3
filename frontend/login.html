@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar — Clínica Veterinária</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="pagina-login">
+    <div class="caixa-login">
+      <div class="pata">🐾</div>
+      <h1>Clínica Veterinária</h1>
+      <p class="subtitulo">Sistema de Gestão — Projeto A3</p>
+
+      <div id="aviso"></div>
+
+      <form id="form-login">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" required autocomplete="username">
+
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" required autocomplete="current-password">
+
+        <button type="submit" id="botao-entrar">Entrar</button>
+      </form>
+
+      <form id="form-registro" hidden>
+        <label for="r-nome">Nome completo</label>
+        <input id="r-nome" required>
+
+        <div class="linha-campos">
+          <div>
+            <label for="r-cpf">CPF</label>
+            <input id="r-cpf" required placeholder="000.000.000-00">
+          </div>
+          <div>
+            <label for="r-telefone">Telefone</label>
+            <input id="r-telefone">
+          </div>
+        </div>
+
+        <div class="linha-campos">
+          <div>
+            <label for="r-crmv">CRMV</label>
+            <input id="r-crmv" required>
+          </div>
+          <div>
+            <label for="r-uf-crmv">UF do CRMV</label>
+            <input id="r-uf-crmv" maxlength="2" required placeholder="SP">
+          </div>
+        </div>
+
+        <label for="r-email">E-mail</label>
+        <input id="r-email" type="email" required>
+
+        <label for="r-senha">Senha (mín. 6 caracteres)</label>
+        <input id="r-senha" type="password" minlength="6" required>
+
+        <button type="submit" id="botao-registrar">Criar conta</button>
+      </form>
+
+      <p class="alternar-login">
+        <span id="texto-alternar">Ainda não tem conta?</span>
+        <button type="button" id="botao-alternar">Cadastre-se</button>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Se já está logado, não faz sentido ver a tela de login de novo.
+    if (getToken()) location.href = "index.html";
+
+    const aviso = document.getElementById("aviso");
+    const formLogin = document.getElementById("form-login");
+    const formRegistro = document.getElementById("form-registro");
+    const botaoAlternar = document.getElementById("botao-alternar");
+    const textoAlternar = document.getElementById("texto-alternar");
+
+    let modoRegistro = false;
+    botaoAlternar.addEventListener("click", () => {
+      modoRegistro = !modoRegistro;
+      formLogin.hidden = modoRegistro;
+      formRegistro.hidden = !modoRegistro;
+      botaoAlternar.textContent = modoRegistro ? "Já tenho conta" : "Cadastre-se";
+      textoAlternar.textContent = modoRegistro ? "Já é cadastrado?" : "Ainda não tem conta?";
+      aviso.innerHTML = "";
+    });
+
+    formLogin.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const botao = document.getElementById("botao-entrar");
+      botao.disabled = true;
+      aviso.innerHTML = "";
+      try {
+        const resultado = await api.post("/auth/login", {
+          email: document.getElementById("email").value,
+          senha: document.getElementById("senha").value,
+        });
+        salvarSessao(resultado.token, resultado.veterinario);
+        location.href = "index.html";
+      } catch (erro) {
+        mostrarAviso(aviso, erro.message);
+      } finally {
+        botao.disabled = false;
+      }
+    });
+
+    formRegistro.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const botao = document.getElementById("botao-registrar");
+      botao.disabled = true;
+      aviso.innerHTML = "";
+      try {
+        await api.post("/auth/registrar", {
+          nome_completo: document.getElementById("r-nome").value,
+          cpf: document.getElementById("r-cpf").value,
+          telefone: document.getElementById("r-telefone").value,
+          crmv: document.getElementById("r-crmv").value,
+          uf_crmv: document.getElementById("r-uf-crmv").value,
+          email: document.getElementById("r-email").value,
+          senha: document.getElementById("r-senha").value,
+        });
+        mostrarAviso(aviso, "Conta criada! Agora é só entrar.", "sucesso");
+        botaoAlternar.click();
+        document.getElementById("email").value = document.getElementById("r-email").value;
+      } catch (erro) {
+        mostrarAviso(aviso, erro.message);
+      } finally {
+        botao.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

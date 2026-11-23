@@ -2,6 +2,8 @@
 
 Projeto A3 – Sistemas Distribuídos e Mobile.
 
+Documentação completa: [`docs/GUIA_DO_PROJETO.md`](docs/GUIA_DO_PROJETO.md) (o que é cada arquivo, como o Flask e o login funcionam) e [`docs/ETAPAS_DE_DESENVOLVIMENTO.md`](docs/ETAPAS_DE_DESENVOLVIMENTO.md) (como o sistema foi construído, passo a passo).
+
 ## Arquitetura
 
 ```
@@ -12,8 +14,8 @@ Frontend Web (HTML/CSS/JS)  --HTTP/REST/JSON-->  API da Clínica (Flask) --SQL--
 
 | Pasta | O que é | Porta |
 |---|---|---|
-| `frontend/` | Interface web | 8000 |
-| `api-clinica/` | API privada da clínica (Flask) | 5000 |
+| `frontend/` | Interface web (login, tutores, animais, ficha clínica, integrações) | 8000 |
+| `api-clinica/` | API privada da clínica (Flask) — login, cadastros, atendimento, integrações | 5000 |
 | `api-governo/` | API governamental simulada (Flask) | 5001 |
 | `database/` | Scripts SQL (a fonte da verdade do banco) | – |
 | `docs/` | DER e documentação | – |
@@ -31,6 +33,8 @@ Pré-requisitos: Python 3.10+, XAMPP (MariaDB) e Git.
 
 > O banco do XAMPP é local: ele **não** vai para o GitHub. Por isso os scripts `.sql` ficam no repositório.
 > Mudou o banco? Atualize o `schema.sql` e avise o grupo.
+>
+> ⚠️ Estes scripts foram escritos e revisados com cuidado, mas **testados aqui apenas contra um banco simulado** (não havia MariaDB disponível na máquina onde o projeto foi montado). Rode-os no XAMPP e teste um fluxo completo (tutor → animal → consulta/vacina/microchip) antes de confiar neles de olhos fechados. Veja a seção "Testes" de [`docs/ETAPAS_DE_DESENVOLVIMENTO.md`](docs/ETAPAS_DE_DESENVOLVIMENTO.md#6-testes-sem-ter-o-mariadb-disponível) para saber exatamente o que já foi validado.
 
 ### 2. API da clínica
 ```bash
@@ -59,7 +63,21 @@ Teste: http://localhost:5001/
 cd frontend
 python -m http.server 8000
 ```
-Abra http://localhost:8000
+Abra http://localhost:8000/login.html
+
+**Login de demonstração** (criado pelo `seed.sql`, para não precisar se cadastrar primeiro):
+- E-mail: `dev@clinica.com`
+- Senha: `clinica123`
+
+(troque a senha, ou apague esse usuário, antes de qualquer uso fora do ambiente de desenvolvimento)
+
+## O que o sistema faz
+
+- **Login** de veterinário, com cadastro, senha com hash e token (JWT).
+- **Tutores**: cadastro com endereço (preenchido automaticamente a partir do CEP, via ViaCEP).
+- **Animais**: cadastro ligado a um tutor, espécie e raça (com validação de que a raça pertence à espécie).
+- **Ficha do animal**: consultas, vacinas (com a flag "antirrábica") e vínculo de microchip, com histórico preservado.
+- **Integração com o governo**: toda vacina antirrábica e todo cadastro/atualização de animal é comunicado à API governamental simulada; a tela "Integração governo" mostra o status de cada envio e permite reenviar os que falharam.
 
 ## Trabalho em grupo (Git)
 
@@ -67,7 +85,7 @@ Abra http://localhost:8000
 - Cada tarefa em uma branch: `git checkout -b feature/nome-da-tarefa`.
 - Abra um Pull Request para a `main` e peça revisão de um colega.
 - Commits pequenos e com mensagem clara ("adiciona CRUD de tutor").
-- **Nunca** suba o arquivo `.env` (senhas). Só o `.env.example`.
+- **Nunca** suba o arquivo `.env` (senhas e a chave do login). Só o `.env.example`.
 - Cada módulo de rotas fica em um arquivo próprio em `api-clinica/app/routes/` para evitar conflitos.
 
 ## Cronograma

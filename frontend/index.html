@@ -3,49 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Clínica Veterinária</title>
+  <title>Início — Clínica Veterinária</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header><h1>Clínica Veterinária</h1></header>
-
-  <main>
-    <section>
-      <h2>Espécies (teste da API)</h2>
-      <p id="status">Carregando...</p>
-      <ul id="lista-especies"></ul>
-
-      <form id="form-especie">
-        <input id="nome" placeholder="Nome da espécie" required>
-        <button type="submit">Adicionar</button>
-      </form>
-    </section>
-  </main>
-
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
   <script>
-    const status = document.getElementById("status");
-    const lista = document.getElementById("lista-especies");
+    const conteudo = renderNav("inicio");
+    const veterinario = getVeterinarioLogado();
 
-    async function carregar() {
-      try {
-        const especies = await api.get("/especies/");
-        status.textContent = "";
-        lista.innerHTML = especies.map(e => `<li>${e.nome}</li>`).join("");
-      } catch (erro) {
-        status.textContent = "Não foi possível falar com a API (ela está rodando na porta 5000?)";
-      }
+    conteudo.innerHTML = `
+      <div class="cabecalho-pagina">
+        <div>
+          <h1>Olá, ${escaparHtml(veterinario ? veterinario.nome_completo : "")}</h1>
+          <p>Resumo rápido do sistema da clínica.</p>
+        </div>
+      </div>
+
+      <div class="grade-cartoes" id="cartoes"></div>
+
+      <div class="cartao">
+        <h2>Fluxo do sistema</h2>
+        <p class="texto-suave" style="line-height:1.6">
+          <strong>Tutores</strong> cadastram seus endereços e dados pessoais →
+          cada tutor tem um ou mais <strong>Animais</strong> →
+          na ficha do animal você registra <strong>Consultas</strong>, <strong>Vacinas</strong>
+          e o <strong>Microchip</strong> → vacinas antirrábicas e o cadastro do animal
+          são enviados automaticamente para a API governamental simulada, acompanhada em
+          <strong>Integração governo</strong>.
+        </p>
+      </div>
+    `;
+
+    const cartoes = document.getElementById("cartoes");
+
+    function cartaoEstatistica(href, numero, rotulo) {
+      const a = document.createElement("a");
+      a.href = href;
+      a.className = "cartao-estatistica";
+      a.innerHTML = `<div class="numero">${numero}</div><div class="rotulo">${rotulo}</div>`;
+      return a;
     }
 
-    document.getElementById("form-especie").addEventListener("submit", async (ev) => {
-      ev.preventDefault();
-      const nome = document.getElementById("nome");
-      await api.post("/especies/", { nome: nome.value });
-      nome.value = "";
-      carregar();
-    });
+    async function carregarResumo() {
+      const [tutores, animais, integracoesPendentes] = await Promise.allSettled([
+        api.get("/tutores/"),
+        api.get("/animais/"),
+        api.get("/integracoes/?status=FALHA"),
+      ]);
 
-    carregar();
+      cartoes.appendChild(cartaoEstatistica(
+        "tutores.html",
+        tutores.status === "fulfilled" ? tutores.value.length : "—",
+        "Tutores cadastrados"
+      ));
+      cartoes.appendChild(cartaoEstatistica(
+        "animais.html",
+        animais.status === "fulfilled" ? animais.value.length : "—",
+        "Animais cadastrados"
+      ));
+      cartoes.appendChild(cartaoEstatistica(
+        "integracoes.html",
+        integracoesPendentes.status === "fulfilled" ? integracoesPendentes.value.length : "—",
+        "Integrações com falha"
+      ));
+    }
+
+    carregarResumo();
   </script>
 </body>
 </html>
