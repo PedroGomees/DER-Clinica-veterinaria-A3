@@ -141,8 +141,9 @@ CREATE TABLE IF NOT EXISTS vinculo_microchip (
   observacao          TEXT         NULL,
   -- colunas auxiliares: valem o id/número só quando o vínculo está ativo (senão NULL),
   -- assim o UNIQUE impede dois vínculos ativos conflitantes.
-  animal_ativo  INT         AS (IF(ativo = 1, id_animal, NULL)) PERSISTENT,
-  chip_ativo    VARCHAR(15) AS (IF(ativo = 1, numero_microchip, NULL)) PERSISTENT,
+  -- "STORED" (em vez de "PERSISTENT") funciona tanto no MariaDB quanto no MySQL.
+  animal_ativo  INT         AS (IF(ativo = 1, id_animal, NULL)) STORED,
+  chip_ativo    VARCHAR(15) AS (IF(ativo = 1, numero_microchip, NULL)) STORED,
   CONSTRAINT uk_microchip_numero UNIQUE (numero_microchip),
   CONSTRAINT uk_um_vinculo_ativo_por_animal UNIQUE (animal_ativo),
   CONSTRAINT uk_um_vinculo_ativo_por_chip   UNIQUE (chip_ativo),
