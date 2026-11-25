@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Início — Clínica Veterinária</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>Início · Clínica Veterinária</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
 </head>
 <body>
-  <script src="js/api.js?v=1"></script>
-  <script src="js/auth.js?v=1"></script>
-  <script src="js/nav.js?v=1"></script>
+  <script src="js/api.js?v=2"></script>
+  <script src="js/auth.js?v=2"></script>
+  <script src="js/nav.js?v=2"></script>
   <script>
     const conteudo = renderNav("inicio");
     const veterinario = getVeterinarioLogado();
@@ -39,11 +39,11 @@
 
     const cartoes = document.getElementById("cartoes");
 
-    function cartaoEstatistica(href, numero, rotulo) {
+    function cartaoEstatistica(href, icone, numero, rotulo) {
       const a = document.createElement("a");
       a.href = href;
       a.className = "cartao-estatistica";
-      a.innerHTML = `<div class="numero">${numero}</div><div class="rotulo">${rotulo}</div>`;
+      a.innerHTML = `<div class="icone">${ICONES[icone]}</div><div><div class="numero">${numero}</div><div class="rotulo">${rotulo}</div></div>`;
       return a;
     }
 
@@ -55,17 +55,17 @@
       ]);
 
       cartoes.appendChild(cartaoEstatistica(
-        "tutores.html",
+        "tutores.html", "tutores",
         tutores.status === "fulfilled" ? tutores.value.length : "—",
         "Tutores cadastrados"
       ));
       cartoes.appendChild(cartaoEstatistica(
-        "animais.html",
+        "animais.html", "animais",
         animais.status === "fulfilled" ? animais.value.length : "—",
         "Animais cadastrados"
       ));
       cartoes.appendChild(cartaoEstatistica(
-        "integracoes.html",
+        "integracoes.html", "integracoes",
         integracoesPendentes.status === "fulfilled" ? integracoesPendentes.value.length : "—",
         "Integrações com falha"
       ));

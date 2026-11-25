@@ -3,7 +3,7 @@ from flask_cors import CORS
 
 from .config import Config
 from .json_provider import JSONProvider
-from .routes import animais, vacinas
+from .routes import animais, docs, vacinas
 
 
 def create_app():
@@ -14,6 +14,7 @@ def create_app():
 
     app.register_blueprint(animais.bp)
     app.register_blueprint(vacinas.bp)
+    app.register_blueprint(docs.bp)  # GET /docs (Swagger UI) e GET /openapi.json
 
     @app.get("/")
     def inicio():

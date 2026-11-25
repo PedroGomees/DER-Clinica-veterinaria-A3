@@ -15,7 +15,7 @@ Frontend Web (HTML/CSS/JS)  --HTTP/REST/JSON-->  API da Clínica (Flask) --SQL--
 | Pasta | O que é | Porta |
 |---|---|---|
 | `frontend/` | Interface web (login, tutores, animais, ficha clínica, integrações) | 8000 |
-| `api-clinica/` | API privada da clínica (Flask) — login, cadastros, atendimento, integrações | 5000 |
+| `api-clinica/` | API privada da clínica (Flask): login, cadastros, atendimento, integrações | 5000 |
 | `api-governo/` | API governamental simulada (Flask) | 5001 |
 | `database/` | Scripts SQL (a fonte da verdade do banco) | – |
 | `docs/` | DER e documentação | – |
@@ -46,6 +46,7 @@ copy .env.example .env
 python run.py
 ```
 Teste: http://localhost:5000/ e http://localhost:5000/especies/
+Documentação interativa (Swagger UI): http://localhost:5000/docs
 
 ### 3. API governamental simulada
 ```bash
@@ -57,6 +58,7 @@ copy .env.example .env
 python run.py
 ```
 Teste: http://localhost:5001/
+Documentação interativa (Swagger UI): http://localhost:5001/docs
 
 ### 4. Frontend
 ```bash
@@ -78,6 +80,17 @@ Abra http://localhost:8000/login.html
 - **Animais**: cadastro ligado a um tutor, espécie e raça (com validação de que a raça pertence à espécie).
 - **Ficha do animal**: consultas, vacinas (com a flag "antirrábica") e vínculo de microchip, com histórico preservado.
 - **Integração com o governo**: toda vacina antirrábica e todo cadastro/atualização de animal é comunicado à API governamental simulada; a tela "Integração governo" mostra o status de cada envio e permite reenviar os que falharam.
+
+## Documentação da API (Swagger/OpenAPI)
+
+Cada API expõe sua própria documentação interativa, direto no navegador:
+- Clínica: http://localhost:5000/docs
+- Governo: http://localhost:5001/docs
+
+A especificação (`openapi.json`, na raiz de cada API) é gerada pelo script `docs/gerar_openapi.py`. Se alguém criar uma rota nova, adicione ela na lista de `PATHS_CLINICA`/`PATHS_GOVERNO` desse script e rode de novo:
+```bash
+python docs/gerar_openapi.py
+```
 
 ## Trabalho em grupo (Git)
 

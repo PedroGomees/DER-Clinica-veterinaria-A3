@@ -95,6 +95,7 @@ O navegador bloqueia, por segurança, uma página em `localhost:8000` que tenta 
 | `app/auth.py` | Geração e conferência do **token de login (JWT)**: `gerar_token()` e o decorator `@login_required`. |
 | `app/validacoes.py` | Funções pequenas: validar CPF, CEP, achar campos obrigatórios faltando. |
 | `app/routes/` | **Um arquivo por assunto.** Veja a tabela abaixo. |
+| `openapi.json` | Especificação OpenAPI/Swagger da API, gerada por `docs/gerar_openapi.py`. Servida em `GET /docs` (Swagger UI) e `GET /openapi.json`. |
 | `app/services/viacep_service.py` | Fala com a API pública ViaCEP. |
 | `app/services/governo_service.py` | Fala com a API governamental simulada: registra a tentativa, envia, e sabe reenviar usando a mesma chave de idempotência. |
 | `tests/` | Reservado para testes automatizados futuros (hoje vazio). |
@@ -115,6 +116,7 @@ Rotas (`app/routes/`), todas exigindo login (`@login_required`) **exceto** `auth
 | `microchips.py` | `/microchips` | Vincular/desvincular microchip, com histórico |
 | `cep.py` | `/cep` | Consulta de CEP via ViaCEP |
 | `integracoes.py` | `/integracoes` | Painel da integração com o governo + reenvio |
+| `docs.py` | `/docs`, `/openapi.json` | Documentação interativa (Swagger UI) |
 
 ### 4.3 `api-governo/` – o "governo" simulado
 
@@ -122,6 +124,7 @@ Rotas (`app/routes/`), todas exigindo login (`@login_required`) **exceto** `auth
 |---|---|
 | `app/routes/animais.py` | `POST /animais/`: cadastra ou atualiza um animal (idempotente); aceita `?simular_falha=1` para testes. |
 | `app/routes/vacinas.py` | `POST /vacinas/`: registra uma vacina antirrábica (o animal precisa já estar cadastrado). |
+| `app/routes/docs.py` | Documentação interativa (Swagger UI), igual à da clínica. |
 | `app/utils.py` | Gera o número de protocolo (ex.: `AN-20261123153000-X7K9`). |
 
 Roda na porta **5001**, com banco próprio (`governo_simulado`).
@@ -145,6 +148,7 @@ Roda na porta **5001**, com banco próprio (`governo_simulado`).
 | `der/versoes-anteriores/` | Versão antiga do DER, guardada por segurança. |
 | `GUIA_DO_PROJETO.md` | Este guia. |
 | `ETAPAS_DE_DESENVOLVIMENTO.md` | Como o sistema foi construído, passo a passo. |
+| `gerar_openapi.py` | Gera o `openapi.json` de cada API (Swagger). Rode de novo ao criar uma rota. |
 
 ### 4.6 `frontend/`
 
@@ -228,12 +232,12 @@ with get_conn() as conn, conn.cursor() as cur:
 
 O login não guarda "sessão" no servidor. Em vez disso:
 
-1. `POST /auth/login` confere o e-mail e a senha (a senha fica no banco como **hash**, nunca em texto puro — `werkzeug.security.generate_password_hash`/`check_password_hash`).
+1. `POST /auth/login` confere o e-mail e a senha. A senha fica no banco como **hash**, nunca em texto puro (`werkzeug.security.generate_password_hash`/`check_password_hash`).
 2. Se estiver certo, a API gera um **token** (`app/auth.py → gerar_token`): um texto assinado digitalmente que carrega o id e o nome do veterinário, com validade de 8 horas.
 3. O frontend guarda esse token no `localStorage` (`js/auth.js → salvarSessao`) e o manda em **todo** pedido seguinte, no cabeçalho `Authorization: Bearer <token>` (`js/api.js`).
-4. Nas rotas protegidas, o decorator `@login_required` confere a assinatura do token antes de deixar a função rodar. Se o token não vier, estiver errado ou tiver expirado, a API responde `401` — e o frontend manda o usuário de volta para `login.html` (`js/api.js`, ao ver um 401).
+4. Nas rotas protegidas, o decorator `@login_required` confere a assinatura do token antes de deixar a função rodar. Se o token não vier, estiver errado ou tiver expirado, a API responde `401`, e o frontend manda o usuário de volta para `login.html` (`js/api.js`, ao ver um 401).
 
-Como o token carrega os dados assinados, a API **não precisa consultar o banco para saber quem está logado** em cada pedido — só confere a assinatura. É por isso que `g.veterinario["id_veterinario"]` é usado direto em `consultas.py`, `vacinas.py` e `microchips.py` para saber quem está registrando o quê, sem o frontend precisar informar isso.
+Como o token carrega os dados assinados, a API **não precisa consultar o banco para saber quem está logado** em cada pedido: só confere a assinatura. É por isso que `g.veterinario["id_veterinario"]` é usado direto em `consultas.py`, `vacinas.py` e `microchips.py` para saber quem está registrando o quê, sem o frontend precisar informar isso.
 
 ---
 
@@ -319,7 +323,7 @@ O frontend **não** chama o ViaCEP direto. Ele chama a **nossa** rota `GET /cep/
 3. Ela envia uma requisição HTTP `POST` para a API governamental (porta 5001), em `/animais/` ou `/vacinas/`.
 4. O governo confere a `chave_idempotencia`: se já viu essa chave antes, devolve o **mesmo protocolo** de novo (não duplica nada); senão, grava no **banco dele** e gera um protocolo novo.
 5. A clínica marca `CONFIRMADO` (com o protocolo) ou, se a chamada falhar, `FALHA` (com a mensagem de erro e `tentativas` incrementado).
-6. A tela **Integração governo** lista tudo isso e tem um botão **Reenviar** para as linhas com `FALHA` — o reenvio usa a mesma chave de idempotência, então é seguro repetir.
+6. A tela **Integração governo** lista tudo isso e tem um botão **Reenviar** para as linhas com `FALHA`. O reenvio usa a mesma chave de idempotência, então é seguro repetir.
 
 Para testar uma falha de propósito, a API do governo aceita `?simular_falha=1` (ex.: chamando `POST http://localhost:5001/animais/?simular_falha=1` direto).
 
@@ -339,9 +343,9 @@ Para testar a API sem o frontend, use o Postman / Thunder Client, sempre mandand
 
 ## 12. Status atual
 
-**Pronto:** DER; as 10 tabelas e os seeds; login com JWT; CRUD completo de espécie, raça, endereço, tutor (com transação) e animal; consultas, vacinas e microchip; ViaCEP; API governamental simulada com idempotência; o acompanhamento e reenvio das integrações; e o frontend completo (login, painel, tutores, animais, ficha do animal com 3 abas, cadastros de apoio e o painel de integrações), com um visual único em todas as telas.
+**Pronto:** DER; as 10 tabelas e os seeds; login com JWT; CRUD completo de espécie, raça, endereço, tutor (com transação) e animal; consultas, vacinas e microchip; ViaCEP; API governamental simulada com idempotência; o acompanhamento e reenvio das integrações; o frontend completo (login, painel, tutores, animais, ficha do animal com 3 abas, cadastros de apoio e o painel de integrações), com um visual único em todas as telas; a documentação interativa (Swagger/OpenAPI) das duas APIs, em `/docs`; e um teste completo rodado contra o MariaDB de verdade (tutor → animal → consulta → vacina antirrábica confirmada no governo → microchip).
 
-**Ainda vale revisar com o grupo:** rodar os scripts `.sql` contra o MariaDB de verdade (foram escritos e revisados, mas testados aqui só com um banco simulado, sem MariaDB disponível nesta máquina — veja o aviso no README); Swagger/OpenAPI; testes automatizados de verdade (hoje a verificação é manual/roteirizada); apresentação final.
+**Ainda vale revisar com o grupo:** testar os fluxos de edição/inativação (PUT/DELETE) e os casos de erro (CPF duplicado, microchip já vinculado, etc.) contra o banco real, já que só o caminho de criação foi testado dessa vez; testes automatizados de verdade (hoje a verificação é manual/roteirizada); apresentação final.
 
 ---
 

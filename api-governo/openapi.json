@@ -1,0 +1,391 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API Governamental Simulada",
+    "description": "Finge ser o sistema do governo: recebe o cadastro de animais e as vacinas antirrábicas enviadas pela clínica. Tem banco de dados próprio, separado do banco da clínica. Projeto A3 · Sistemas Distribuídos e Mobile.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5001",
+      "description": "Servidor local"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Animais",
+      "description": "Cadastro/atualização de animais (upsert idempotente)."
+    },
+    {
+      "name": "Vacinas",
+      "description": "Registro de vacinas antirrábicas (idempotente)."
+    }
+  ],
+  "components": {
+    "schemas": {
+      "Erro": {
+        "type": "object",
+        "properties": {
+          "erro": {
+            "type": "string"
+          }
+        }
+      },
+      "CadastroAnimal": {
+        "type": "object",
+        "required": [
+          "chave_idempotencia",
+          "id_animal_clinica",
+          "nome"
+        ],
+        "properties": {
+          "chave_idempotencia": {
+            "type": "string",
+            "description": "UUID gerado pela clínica; reenviar com a mesma chave não duplica o registro"
+          },
+          "id_animal_clinica": {
+            "type": "integer",
+            "description": "id do animal no sistema da clínica"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "especie": {
+            "type": "string"
+          },
+          "raca": {
+            "type": "string"
+          },
+          "numero_microchip": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "RegistroVacina": {
+        "type": "object",
+        "required": [
+          "chave_idempotencia",
+          "id_animal_clinica",
+          "id_vacina_clinica"
+        ],
+        "properties": {
+          "chave_idempotencia": {
+            "type": "string"
+          },
+          "id_animal_clinica": {
+            "type": "integer",
+            "description": "o animal precisa já estar cadastrado (ver POST /animais/)"
+          },
+          "id_vacina_clinica": {
+            "type": "integer",
+            "description": "id da vacina no sistema da clínica"
+          },
+          "data_aplicacao": {
+            "type": "string",
+            "format": "date"
+          },
+          "lote": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ProtocoloResposta": {
+        "type": "object",
+        "properties": {
+          "protocolo": {
+            "type": "string",
+            "example": "AN-20261124211317-7AG4"
+          },
+          "repetido": {
+            "type": "boolean",
+            "description": "true quando a chave_idempotencia já tinha sido recebida antes"
+          }
+        }
+      },
+      "AnimalRegistrado": {
+        "type": "object",
+        "properties": {
+          "id_registro": {
+            "type": "integer"
+          },
+          "id_animal_clinica": {
+            "type": "integer"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "especie": {
+            "type": "string"
+          },
+          "raca": {
+            "type": "string",
+            "nullable": true
+          },
+          "numero_microchip": {
+            "type": "string",
+            "nullable": true
+          },
+          "protocolo": {
+            "type": "string"
+          },
+          "data_registro": {
+            "type": "string"
+          },
+          "data_atualizacao": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Animais"
+        ],
+        "summary": "Verifica se a API está no ar",
+        "responses": {
+          "200": {
+            "description": "No ar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensagem": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/animais/": {
+      "post": {
+        "tags": [
+          "Animais"
+        ],
+        "summary": "Cadastra ou atualiza um animal (idempotente)",
+        "parameters": [
+          {
+            "name": "simular_falha",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "description": "1 = devolve 503 de propósito, para testar o reenvio do lado da clínica"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CadastroAnimal"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Já tinha sido recebido antes (mesma chave_idempotencia): devolve o mesmo protocolo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocoloResposta"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocoloResposta"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "chave_idempotencia, id_animal_clinica ou nome faltando",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro de integridade ao gravar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Falha simulada (?simular_falha=1)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/animais/{id_animal_clinica}": {
+      "get": {
+        "tags": [
+          "Animais"
+        ],
+        "summary": "Busca o registro de um animal",
+        "parameters": [
+          {
+            "name": "id_animal_clinica",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnimalRegistrado"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Animal não registrado no governo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vacinas/": {
+      "post": {
+        "tags": [
+          "Vacinas"
+        ],
+        "summary": "Registra uma vacina antirrábica (idempotente)",
+        "parameters": [
+          {
+            "name": "simular_falha",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                0,
+                1
+              ]
+            },
+            "description": "1 = devolve 503 de propósito, para testar o reenvio do lado da clínica"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistroVacina"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Já tinha sido recebido antes: devolve o mesmo protocolo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocoloResposta"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocoloResposta"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Campo obrigatório faltando",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "O animal ainda não está cadastrado no governo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro de integridade ao gravar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Falha simulada (?simular_falha=1)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Erro"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
