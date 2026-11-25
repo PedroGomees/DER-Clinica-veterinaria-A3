@@ -155,16 +155,16 @@ Roda na porta **5001**, com banco próprio (`governo_simulado`).
 | Arquivo | O que faz |
 |---|---|
 | `login.html` | Tela de entrada: login e cadastro de veterinário (dois formulários, um botão alterna entre eles). |
-| `index.html` | Painel inicial: saudação, contadores (tutores, animais, integrações com falha) e explicação do fluxo. |
-| `tutores.html` | Lista, busca, cria e edita tutores. O formulário tem o botão **Buscar CEP**, que preenche o endereço. |
-| `animais.html` | Lista, busca, cria e edita animais. O formulário tem os selects encadeados **espécie → raça**. |
-| `animal.html` | **Ficha do animal**, a tela mais importante: três abas (Consultas, Vacinas, Microchip), cada uma com formulário de registro e histórico. |
+| `index.html` | Painel inicial: saudação, contadores (tutores, animais, integrações com falha) e o cartão **Vacinas com dose próxima** (lê `proxima_dose` de todas as vacinas e avisa o que vence nos próximos 30 dias). |
+| `tutores.html` | Lista, busca, cria e edita tutores. O formulário tem o botão **Buscar CEP**, que preenche o endereço. A barra de ferramentas tem um filtro de **status** (somente ativos / ativos e inativos). |
+| `animais.html` | Lista, busca, cria e edita animais. O formulário tem os selects encadeados **espécie → raça**. A barra de ferramentas tem filtros de **espécie, sexo e porte**, aplicados no próprio navegador. |
+| `animal.html` | **Ficha do animal**, a tela mais importante: três abas (Consultas, Vacinas, Microchip), cada uma com formulário de registro e histórico. Tem um botão **Imprimir ficha**, que usa `window.print()` e uma regra `@media print` no CSS para esconder o menu/formulários e mostrar as três abas juntas no papel. |
 | `cadastros.html` | Administração de Espécies e Raças. |
 | `integracoes.html` | Painel da integração com o governo: status de cada envio, com botão **Reenviar** nos que falharam. |
 | `js/api.js` | Função `api.get/post/put/delete`: monta o `fetch`, inclui o token de login no cabeçalho e trata erros. |
 | `js/auth.js` | `getToken`, `salvarSessao`, `logout`, `exigirLogin` (usadas por toda página protegida). |
-| `js/nav.js` | Desenha a barra lateral (igual em todas as páginas) e funções auxiliares (`escaparHtml`, `formatarData`, `mostrarAviso`). |
-| `css/style.css` | Sistema visual único: cores, cartões, tabelas, formulários, modais, selos de status, abas, responsivo. |
+| `js/nav.js` | Desenha a barra lateral (igual em todas as páginas), o menu móvel (gaveta, abaixo de 760px de largura), a **busca global** (Ctrl+K, busca tutores e animais ao mesmo tempo) e funções auxiliares (`escaparHtml`, `formatarData`, `mostrarAviso`). |
+| `css/style.css` | Sistema visual único: cores, cartões, tabelas, formulários, modais, selos de status, abas, menu móvel e impressão (`@media print`). |
 
 ---
 
@@ -343,7 +343,7 @@ Para testar a API sem o frontend, use o Postman / Thunder Client, sempre mandand
 
 ## 12. Status atual
 
-**Pronto:** DER; as 10 tabelas e os seeds; login com JWT; CRUD completo de espécie, raça, endereço, tutor (com transação) e animal; consultas, vacinas e microchip; ViaCEP; API governamental simulada com idempotência; o acompanhamento e reenvio das integrações; o frontend completo (login, painel, tutores, animais, ficha do animal com 3 abas, cadastros de apoio e o painel de integrações), com um visual único em todas as telas; a documentação interativa (Swagger/OpenAPI) das duas APIs, em `/docs`; e um teste completo rodado contra o MariaDB de verdade (tutor → animal → consulta → vacina antirrábica confirmada no governo → microchip).
+**Pronto:** DER; as 10 tabelas e os seeds; login com JWT; CRUD completo de espécie, raça, endereço, tutor (com transação) e animal; consultas, vacinas e microchip; ViaCEP; API governamental simulada com idempotência; o acompanhamento e reenvio das integrações; o frontend completo (login, painel, tutores, animais, ficha do animal com 3 abas, cadastros de apoio e o painel de integrações), com um visual único em todas as telas, menu móvel e cinco diferenciais (filtros em Animais, filtro de status em Tutores, impressão da ficha, alerta de vacina com dose próxima, busca global); a documentação interativa (Swagger/OpenAPI) das duas APIs, em `/docs`; e um teste completo rodado contra o MariaDB de verdade (tutor → animal → consulta → vacina antirrábica confirmada no governo → microchip).
 
 **Ainda vale revisar com o grupo:** testar os fluxos de edição/inativação (PUT/DELETE) e os casos de erro (CPF duplicado, microchip já vinculado, etc.) contra o banco real, já que só o caminho de criação foi testado dessa vez; testes automatizados de verdade (hoje a verificação é manual/roteirizada); apresentação final.
 

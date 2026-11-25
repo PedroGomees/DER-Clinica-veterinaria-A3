@@ -33,6 +33,18 @@ const ICONES = {
   sair: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"/><path d="M14.5 8 18.5 12l-4 4"/><path d="M18.5 12H9.5"/>
   </svg>`,
+  menu: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>
+  </svg>`,
+  imprimir: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 8.5V4h10v4.5"/><rect x="4.5" y="8.5" width="15" height="7" rx="1.3"/><path d="M7 14.5h10V20H7z"/>
+  </svg>`,
+  sino: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 10a6 6 0 0 1 12 0c0 4.2 1.3 5.6 1.8 6.2H4.2C4.7 15.6 6 14.2 6 10z"/><path d="M10 19a2.2 2.2 0 0 0 4 0"/>
+  </svg>`,
+  busca: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="10.5" cy="10.5" r="6.3"/><path d="M19.8 19.8 15 15"/>
+  </svg>`,
 };
 
 const LINKS_NAV = [
@@ -55,9 +67,14 @@ function renderNav(ativo) {
   const veterinario = getVeterinarioLogado();
 
   document.body.innerHTML = `
+    <button class="botao-menu-movel" id="botao-menu-movel" type="button" aria-label="Abrir menu">${ICONES.menu}</button>
+    <div class="fundo-menu-movel" id="fundo-menu-movel"></div>
     <div class="app">
-      <aside class="barra-lateral">
+      <aside class="barra-lateral" id="barra-lateral">
         <div class="marca"><span class="logo-marca">${ICONES.logo}</span> Clínica Vet</div>
+        <button class="botao-busca-global" id="botao-busca-global" type="button">
+          ${ICONES.busca}<span class="rotulo-busca">Buscar</span><span class="atalho-busca">Ctrl K</span>
+        </button>
         <nav>
           ${LINKS_NAV.map(
             (l) => `<a href="${l.href}" class="${l.id === ativo ? "ativo" : ""}">${ICONES[l.icone]}<span>${l.rotulo}</span></a>`
@@ -71,10 +88,103 @@ function renderNav(ativo) {
       </aside>
       <main class="conteudo" id="conteudo"></main>
     </div>
+
+    <div class="fundo-modal" id="fundo-busca-global" hidden>
+      <div class="modal modal-busca">
+        <input type="search" id="input-busca-global" placeholder="Buscar tutor ou animal..." autocomplete="off">
+        <div class="resultados-busca-global" id="resultados-busca-global"></div>
+      </div>
+    </div>
   `;
 
   document.getElementById("botao-sair").addEventListener("click", logout);
+
+  // Menu móvel: some da tela por padrão (CSS) e abre/fecha por cima do
+  // conteúdo, em vez de espremer os links numa barra horizontal.
+  const barraLateral = document.getElementById("barra-lateral");
+  const fundoMenuMovel = document.getElementById("fundo-menu-movel");
+  function alternarMenuMovel() {
+    barraLateral.classList.toggle("aberta");
+    fundoMenuMovel.classList.toggle("aberto");
+  }
+  document.getElementById("botao-menu-movel").addEventListener("click", alternarMenuMovel);
+  fundoMenuMovel.addEventListener("click", alternarMenuMovel);
+  barraLateral.querySelectorAll("nav a").forEach((a) => a.addEventListener("click", alternarMenuMovel));
+
+  configurarBuscaGlobal(barraLateral, fundoMenuMovel);
+
   return document.getElementById("conteudo");
+}
+
+// Busca global (Ctrl+K): procura tutores e animais ao mesmo tempo e leva
+// direto para a tela de cada um. Não precisa de rota nova na API: usa os
+// mesmos GET /tutores/?q= e GET /animais/?q= que as telas de lista já usam.
+function configurarBuscaGlobal(barraLateral, fundoMenuMovel) {
+  const fundo = document.getElementById("fundo-busca-global");
+  const input = document.getElementById("input-busca-global");
+  const resultados = document.getElementById("resultados-busca-global");
+  const MENSAGEM_INICIAL = '<p class="mensagem-busca">Digite para buscar tutores e animais...</p>';
+
+  function abrir() {
+    barraLateral.classList.remove("aberta");
+    fundoMenuMovel.classList.remove("aberto");
+    fundo.hidden = false;
+    input.value = "";
+    resultados.innerHTML = MENSAGEM_INICIAL;
+    setTimeout(() => input.focus(), 20);
+  }
+  function fechar() { fundo.hidden = true; }
+
+  document.getElementById("botao-busca-global").addEventListener("click", abrir);
+  fundo.addEventListener("click", (ev) => { if (ev.target === fundo) fechar(); });
+
+  document.addEventListener("keydown", (ev) => {
+    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "k") {
+      ev.preventDefault();
+      fundo.hidden ? abrir() : fechar();
+    } else if (ev.key === "Escape" && !fundo.hidden) {
+      fechar();
+    }
+  });
+
+  function itemResultado(icone, href, titulo, subtitulo) {
+    return `<a class="resultado-busca" href="${href}">${ICONES[icone]}
+      <span class="texto-resultado"><strong>${escaparHtml(titulo)}</strong><span>${escaparHtml(subtitulo)}</span></span>
+    </a>`;
+  }
+
+  async function buscar(termo) {
+    resultados.innerHTML = '<p class="mensagem-busca">Buscando...</p>';
+    try {
+      const [tutores, animais] = await Promise.all([
+        api.get(`/tutores/?q=${encodeURIComponent(termo)}`),
+        api.get(`/animais/?q=${encodeURIComponent(termo)}`),
+      ]);
+      if (tutores.length === 0 && animais.length === 0) {
+        resultados.innerHTML = '<p class="mensagem-busca">Nada encontrado.</p>';
+        return;
+      }
+      resultados.innerHTML =
+        (tutores.length
+          ? '<div class="grupo-resultado-busca">Tutores</div>' +
+            tutores.slice(0, 6).map((t) => itemResultado("tutores", `animais.html?id_tutor=${t.id_tutor}`, t.nome_completo, t.cpf)).join("")
+          : "") +
+        (animais.length
+          ? '<div class="grupo-resultado-busca">Animais</div>' +
+            animais.slice(0, 6).map((a) => itemResultado("animais", `animal.html?id=${a.id_animal}`, a.nome, `tutor: ${a.nome_tutor}`)).join("")
+          : "");
+    } catch (erro) {
+      resultados.innerHTML = `<p class="mensagem-busca">${escaparHtml(erro.message)}</p>`;
+    }
+  }
+
+  let temporizador;
+  input.addEventListener("input", () => {
+    clearTimeout(temporizador);
+    const termo = input.value.trim();
+    if (!termo) { resultados.innerHTML = MENSAGEM_INICIAL; return; }
+    temporizador = setTimeout(() => buscar(termo), 300);
+  });
 }
 
 function escaparHtml(texto) {

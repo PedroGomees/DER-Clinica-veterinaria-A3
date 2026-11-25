@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Animais · Clínica Veterinária</title>
-  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
-  <script src="js/api.js?v=2"></script>
-  <script src="js/auth.js?v=2"></script>
-  <script src="js/nav.js?v=2"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/nav.js?v=4"></script>
   <script>
     const conteudo = renderNav("animais");
     const parametros = new URLSearchParams(location.search);
@@ -26,6 +26,18 @@
       <div class="cartao">
         <div class="barra-ferramentas">
           <input type="search" id="busca" placeholder="Buscar pelo nome do animal...">
+          <select id="filtro-especie"><option value="">Todas as espécies</option></select>
+          <select id="filtro-sexo">
+            <option value="">Macho e fêmea</option>
+            <option value="M">Macho</option>
+            <option value="F">Fêmea</option>
+          </select>
+          <select id="filtro-porte">
+            <option value="">Todos os portes</option>
+            <option value="PEQUENO">Pequeno</option>
+            <option value="MEDIO">Médio</option>
+            <option value="GRANDE">Grande</option>
+          </select>
           ${idTutorFiltro ? '<a href="animais.html" class="botao-texto">Ver todos os animais</a>' : ""}
           <button type="button" class="botao-primario empurra-direita" id="botao-novo">+ Novo animal</button>
         </div>
@@ -212,6 +224,31 @@
       return tr;
     }
 
+    // Os filtros de espécie/sexo/porte são aplicados aqui no navegador (a
+    // lista inteira já vem da API), para não precisar mexer no backend.
+    async function preencherFiltroEspecies() {
+      const especies = await api.get("/especies/");
+      const select = document.getElementById("filtro-especie");
+      especies.forEach((e) => {
+        const opcao = document.createElement("option");
+        opcao.value = e.id_especie;
+        opcao.textContent = e.nome;
+        select.appendChild(opcao);
+      });
+    }
+
+    function aplicarFiltrosLocais(animais) {
+      const idEspecie = document.getElementById("filtro-especie").value;
+      const sexo = document.getElementById("filtro-sexo").value;
+      const porte = document.getElementById("filtro-porte").value;
+      return animais.filter((a) => {
+        if (idEspecie && String(a.id_especie) !== idEspecie) return false;
+        if (sexo && a.sexo !== sexo) return false;
+        if (porte && a.porte !== porte) return false;
+        return true;
+      });
+    }
+
     async function carregarAnimais() {
       areaTabela.innerHTML = '<div class="carregando">Carregando...</div>';
       try {
@@ -219,9 +256,10 @@
         const filtros = new URLSearchParams();
         if (termo) filtros.set("q", termo);
         if (idTutorFiltro) filtros.set("id_tutor", idTutorFiltro);
-        const animais = await api.get(`/animais/?${filtros.toString()}`);
+        const todosOsAnimais = await api.get(`/animais/?${filtros.toString()}`);
+        const animais = aplicarFiltrosLocais(todosOsAnimais);
         if (animais.length === 0) {
-          areaTabela.innerHTML = '<div class="tabela-vazia">Nenhum animal encontrado.</div>';
+          areaTabela.innerHTML = `<div class="tabela-vazia">Nenhum animal encontrado${todosOsAnimais.length ? " com esses filtros" : ""}.</div>`;
           return;
         }
         const tabela = document.createElement("table");
@@ -243,7 +281,11 @@
       clearTimeout(temporizadorBusca);
       temporizadorBusca = setTimeout(carregarAnimais, 300);
     });
+    ["filtro-especie", "filtro-sexo", "filtro-porte"].forEach((id) =>
+      document.getElementById(id).addEventListener("change", carregarAnimais)
+    );
 
+    preencherFiltroEspecies();
     carregarAnimais();
   </script>
 </body>

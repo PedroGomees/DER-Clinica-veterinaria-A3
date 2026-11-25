@@ -195,7 +195,9 @@ svg { display: block; }
   font-size: 1.02rem;
   font-weight: 700;
   color: var(--azul-escuro);
+  display: flex; align-items: center; gap: 8px;
 }
+.cartao h2 svg { width: 19px; height: 19px; color: var(--marca-1); flex-shrink: 0; }
 
 .grade-cartoes {
   display: grid;
@@ -313,6 +315,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important
 
 /* ---------- tabelas ---------- */
 
+#area-tabela { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.91rem; }
 thead th {
   text-align: left;
@@ -386,7 +389,7 @@ td.numerico { text-align: right; font-variant-numeric: tabular-nums; }
   position: fixed; inset: 0; background: rgba(23, 20, 51, 0.5);
   backdrop-filter: blur(2px);
   display: flex; align-items: flex-start; justify-content: center;
-  padding: 40px 16px; overflow-y: auto; z-index: 50;
+  padding: 40px 16px; overflow-y: auto; z-index: 80;
 }
 .fundo-modal[hidden] { display: none; }
 .modal {
@@ -445,12 +448,96 @@ td.numerico { text-align: right; font-variant-numeric: tabular-nums; }
 .carregando { padding: 20px; text-align: center; color: var(--texto-suave); }
 .oculto { display: none !important; }
 
+/* ---------- menu móvel (celular / janela estreita) ----------
+   Em vez de espremer os links numa barra horizontal (que corta e
+   fica ilegível), o menu vira uma gaveta: some da tela e só aparece
+   quando o botão de hambúrguer é clicado, por cima do conteúdo. */
+
+.botao-menu-movel {
+  display: none;
+  position: fixed; top: 14px; left: 14px; z-index: 70;
+  width: 42px; height: 42px;
+  border-radius: 11px;
+  background: var(--azul-escuro); color: #fff; border: none;
+  align-items: center; justify-content: center;
+  box-shadow: var(--sombra-forte);
+}
+.botao-menu-movel svg { width: 20px; height: 20px; }
+
+.fundo-menu-movel {
+  display: none;
+  position: fixed; inset: 0; z-index: 65;
+  background: rgba(15, 13, 30, 0.5);
+}
+
 @media (max-width: 760px) {
-  .app { flex-direction: column; }
-  .barra-lateral { width: 100%; flex-direction: row; align-items: center; padding: 12px 14px; overflow-x: auto; background: var(--azul-escuro); }
-  .barra-lateral .marca { padding: 0 12px 0 0; margin: 0; }
-  .barra-lateral nav { flex-direction: row; padding: 0; }
-  .barra-lateral .rodape-usuario { margin: 0 0 0 auto; padding: 0; }
-  .barra-lateral .rodape-usuario .info { display: none; }
-  .conteudo { padding: 20px 16px 40px; }
+  .botao-menu-movel { display: flex; }
+
+  .barra-lateral {
+    position: fixed; inset: 0 auto 0 0;
+    height: 100vh; width: 250px;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 66;
+  }
+  .barra-lateral.aberta { transform: translateX(0); }
+
+  .fundo-menu-movel.aberto { display: block; }
+
+  .conteudo { padding: 80px 16px 40px; }
+}
+
+/* ---------- busca global (Ctrl+K) ---------- */
+
+.barra-lateral .botao-busca-global {
+  display: flex; align-items: center; gap: 9px;
+  margin: 0 12px 14px; padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--raio-pequeno);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.83rem; font-weight: 500;
+  box-shadow: none; width: calc(100% - 24px);
+}
+.barra-lateral .botao-busca-global:hover { background: rgba(255, 255, 255, 0.11); color: #fff; transform: none; }
+.barra-lateral .botao-busca-global svg { width: 16px; height: 16px; flex-shrink: 0; }
+.barra-lateral .botao-busca-global .rotulo-busca { flex: 1; text-align: left; }
+.barra-lateral .botao-busca-global .atalho-busca {
+  font-size: 0.68rem; padding: 1px 6px; border-radius: 5px;
+  background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.8);
+}
+
+.modal-busca { max-width: 480px; padding: 0; overflow: hidden; }
+.modal-busca input[type="search"] {
+  border: none; border-bottom: 1.5px solid var(--borda); border-radius: 0;
+  padding: 16px 20px; font-size: 1rem; background: #fff;
+}
+.modal-busca input[type="search"]:focus { box-shadow: none; border-color: var(--borda); }
+.resultados-busca-global { max-height: 360px; overflow-y: auto; padding: 6px; }
+.grupo-resultado-busca {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--texto-suave); padding: 10px 12px 4px;
+}
+.resultado-busca {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px; border-radius: 10px; text-decoration: none; color: var(--texto);
+}
+.resultado-busca:hover { background: var(--azul-claro); }
+.resultado-busca svg { width: 18px; height: 18px; color: var(--marca-1); flex-shrink: 0; }
+.resultado-busca .texto-resultado { display: flex; flex-direction: column; min-width: 0; }
+.resultado-busca strong { font-size: 0.9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resultado-busca span { font-size: 0.78rem; color: var(--texto-suave); }
+.mensagem-busca { padding: 16px 20px; color: var(--texto-suave); font-size: 0.88rem; }
+
+/* ---------- impressão (ficha do animal) ----------
+   Qualquer elemento com .nao-imprime some; as três abas (consultas,
+   vacinas, microchip) são forçadas a aparecer juntas, mesmo que só uma
+   estivesse selecionada na tela. */
+@media print {
+  .barra-lateral, .botao-menu-movel, .fundo-menu-movel, .nao-imprime { display: none !important; }
+  .aba-conteudo[hidden] { display: block !important; }
+  .app { display: block; }
+  .conteudo { padding: 0; }
+  .cartao { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+  body { background: #fff; }
 }

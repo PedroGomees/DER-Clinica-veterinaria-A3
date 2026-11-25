@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Início · Clínica Veterinária</title>
-  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
-  <script src="js/api.js?v=2"></script>
-  <script src="js/auth.js?v=2"></script>
-  <script src="js/nav.js?v=2"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/nav.js?v=4"></script>
   <script>
     const conteudo = renderNav("inicio");
     const veterinario = getVeterinarioLogado();
@@ -23,6 +23,11 @@
       </div>
 
       <div class="grade-cartoes" id="cartoes"></div>
+
+      <div class="cartao">
+        <h2>${ICONES.sino} Vacinas com dose próxima (30 dias)</h2>
+        <div id="alerta-vacinas"><div class="carregando">Carregando...</div></div>
+      </div>
 
       <div class="cartao">
         <h2>Fluxo do sistema</h2>
@@ -71,7 +76,49 @@
       ));
     }
 
+    // Usa o próprio campo "proxima_dose" das vacinas (hoje só aparecia na
+    // ficha de cada animal) para avisar, de um jeito centralizado, quais
+    // doses vencem nos próximos 30 dias (ou já venceram).
+    async function carregarAlertaVacinas() {
+      const area = document.getElementById("alerta-vacinas");
+      try {
+        const vacinas = await api.get("/vacinas/");
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        const proximas = vacinas
+          .filter((v) => v.proxima_dose)
+          .map((v) => ({ ...v, _data: _partesDaData(v.proxima_dose) }))
+          .filter((v) => v._data)
+          .map((v) => ({ ...v, _dias: Math.round((v._data - hoje) / 86400000) }))
+          .filter((v) => v._dias <= 30)
+          .sort((a, b) => a._dias - b._dias)
+          .slice(0, 8);
+
+        if (proximas.length === 0) {
+          area.innerHTML = '<p class="texto-suave">Nenhuma vacina com dose marcada para os próximos 30 dias.</p>';
+          return;
+        }
+
+        area.innerHTML = proximas.map((v) => {
+          const selo = v._dias < 0
+            ? '<span class="selo selo-vermelho">Atrasada</span>'
+            : v._dias <= 7
+              ? '<span class="selo selo-laranja">Em breve</span>'
+              : '<span class="selo selo-azul">Agendada</span>';
+          return `
+            <a href="animal.html?id=${v.id_animal}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--borda);text-decoration:none;color:inherit">
+              <span><strong>${escaparHtml(v.nome_animal)}</strong><span class="texto-suave"> · ${escaparHtml(v.nome_vacina)} · ${formatarData(v.proxima_dose)}</span></span>
+              ${selo}
+            </a>`;
+        }).join("");
+      } catch (erro) {
+        area.innerHTML = `<div class="aviso aviso-erro">${escaparHtml(erro.message)}</div>`;
+      }
+    }
+
     carregarResumo();
+    carregarAlertaVacinas();
   </script>
 </body>
 </html>

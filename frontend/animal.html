@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ficha do animal · Clínica Veterinária</title>
-  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
-  <script src="js/api.js?v=2"></script>
-  <script src="js/auth.js?v=2"></script>
-  <script src="js/nav.js?v=2"></script>
+  <script src="js/api.js?v=4"></script>
+  <script src="js/auth.js?v=4"></script>
+  <script src="js/nav.js?v=4"></script>
   <script>
     const conteudo = renderNav("animais");
     const idAnimal = new URLSearchParams(location.search).get("id");
@@ -22,13 +22,14 @@
     conteudo.innerHTML = `
       <div class="cabecalho-pagina">
         <div>
-          <a href="animais.html" class="botao-texto" style="padding-left:0">&larr; Voltar para Animais</a>
+          <a href="animais.html" class="botao-texto nao-imprime" style="padding-left:0">&larr; Voltar para Animais</a>
           <h1 id="titulo-animal">Carregando...</h1>
           <p id="subtitulo-animal"></p>
         </div>
+        <button type="button" class="botao-secundario nao-imprime" id="botao-imprimir">${ICONES.imprimir} Imprimir ficha</button>
       </div>
 
-      <div class="abas">
+      <div class="abas nao-imprime">
         <button type="button" class="ativa" data-aba="consultas">Consultas</button>
         <button type="button" data-aba="vacinas">Vacinas</button>
         <button type="button" data-aba="microchip">Microchip</button>
@@ -36,7 +37,7 @@
 
       <!-- ===== Consultas ===== -->
       <div class="aba-conteudo" id="aba-consultas">
-        <div class="cartao">
+        <div class="cartao nao-imprime">
           <h2>Registrar nova consulta</h2>
           <div id="aviso-consulta"></div>
           <form id="form-consulta">
@@ -74,7 +75,7 @@
 
       <!-- ===== Vacinas ===== -->
       <div class="aba-conteudo" id="aba-vacinas" hidden>
-        <div class="cartao">
+        <div class="cartao nao-imprime">
           <h2>Registrar vacina aplicada</h2>
           <div id="aviso-vacina"></div>
           <form id="form-vacina">
@@ -279,7 +280,7 @@
           <p><span class="selo selo-verde">Vinculado</span></p>
           <p style="font-size:1.3rem;font-weight:700;margin:8px 0">${escaparHtml(ativo.numero_microchip)}</p>
           <p class="texto-suave">Vinculado em ${formatarDataHora(ativo.data_vinculacao)} por ${escaparHtml(ativo.nome_veterinario)}</p>
-          <div class="barra-acoes" style="justify-content:flex-start">
+          <div class="barra-acoes nao-imprime" style="justify-content:flex-start">
             <button type="button" class="botao-perigo" id="botao-desvincular">Desvincular</button>
           </div>
         `;
@@ -293,7 +294,7 @@
           <h2>Microchip atual</h2>
           <p><span class="selo selo-cinza">Sem microchip ativo</span></p>
           <div id="aviso-microchip"></div>
-          <form id="form-microchip" style="margin-top:10px">
+          <form id="form-microchip" class="nao-imprime" style="margin-top:10px">
             <label for="numero-microchip">Número do microchip</label>
             <input id="numero-microchip" required placeholder="15 dígitos">
             <div class="barra-acoes" style="justify-content:flex-start">
@@ -338,6 +339,8 @@
       lista.innerHTML = "";
       lista.appendChild(tabela);
     }
+
+    document.getElementById("botao-imprimir").addEventListener("click", () => window.print());
 
     carregarAnimal();
     carregarConsultas();

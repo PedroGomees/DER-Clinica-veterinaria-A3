@@ -148,6 +148,29 @@ Depois do sistema completo e testado, foi gerada a documentação interativa dos
 - Cada API ganhou um módulo `app/routes/docs.py` com duas rotas nativas do Flask: `GET /openapi.json` (devolve o arquivo) e `GET /docs` (uma página HTML simples que carrega o Swagger UI via CDN, apontando para `/openapi.json`).
 - A documentação foi testada de verdade: um login foi executado **direto pela tela do Swagger** (botão "Try it out"), contra a API rodando com o banco real, e devolveu o mesmo token que o frontend recebe.
 
+## 11. Revisão de texto e visual
+
+Depois de todo o sistema pronto e testado, vieram dois ajustes finais pedidos pelo grupo:
+
+- **Revisão de texto:** a documentação e os comentários do código usavam bastante travessão (—), um sinal de pontuação comum em texto gerado por IA. Todas as ocorrências em prosa (markdown e comentários de código) foram reescritas sem esse símbolo, trocando por vírgula, dois-pontos ou frases mais curtas. O único lugar onde o "—" continua é dentro do frontend, como marcador visual de "campo vazio" numa tabela (ex.: telefone não informado), que é uma convenção de interface comum, não texto escrito.
+- **Visual do frontend:** o CSS foi refeito com uma paleta própria (índigo/violeta), ícones em SVG desenhados à mão para a barra lateral (sem depender de nenhuma biblioteca de ícones nem de internet), avatar com as iniciais do veterinário logado, e uma tela de login com fundo em gradiente. O objetivo foi fugir da aparência "padrão" de um painel administrativo genérico. As telas principais (login, painel, tutores, ficha do animal, integrações) foram conferidas de novo no navegador depois da mudança.
+
+## 12. Responsividade
+
+Numa tela estreita, o menu lateral virava uma barra horizontal cheia de links, que não cabiam e ficavam cortados. A solução não foi tentar espremer os links numa linha só: o menu passou a se comportar como uma **gaveta**. Abaixo de 760px de largura, ele some da tela por completo e só aparece quando o usuário clica num botão de hambúrguer (☰) fixo no canto superior esquerdo, sobrepondo o conteúdo com um fundo escurecido atrás, igual ao padrão que a maioria dos aplicativos usa no celular. Clicar fora do menu, ou num link, fecha ele de novo.
+
+## 13. Diferenciais do frontend
+
+Depois do sistema completo, testado e com a documentação em dia, foram acrescentadas cinco melhorias pontuais, sugeridas para dar um diferencial ao projeto sem mexer na API nem no banco (menor risco, já perto da entrega):
+
+1. **Filtros em Animais** (espécie, sexo, porte): como a lista inteira de animais já vem da API numa só chamada, os filtros são aplicados no próprio navegador (`aplicarFiltrosLocais()` em `animais.html`), sem precisar de parâmetros novos na API.
+2. **Filtro de status em Tutores** (somente ativos / ativos e inativos): a API já aceita `?todos=1` desde o início; só faltava um controle na tela para usar essa opção, com uma coluna "Status" mostrando um selo verde ou cinza.
+3. **Imprimir a ficha do animal**: um botão que chama `window.print()`. Uma regra `@media print` no CSS esconde o menu, os formulários e botões de ação (classe `.nao-imprime`), e força as três abas (consultas, vacinas, microchip) a aparecerem juntas na impressão, mesmo que só uma estivesse selecionada na tela.
+4. **Alerta de vacina com dose próxima**: o campo `proxima_dose` já existia na tabela `vacina` desde o início, mas só aparecia dentro da ficha de cada animal. Um cartão novo no painel inicial busca todas as vacinas (`GET /vacinas/` sem filtro de animal), calcula quantos dias faltam para cada `proxima_dose` e mostra as mais urgentes primeiro, com selo "Atrasada" (vermelho), "Em breve" (laranja, até 7 dias) ou "Agendada" (azul, até 30 dias).
+5. **Busca global (Ctrl+K)**: um campo de busca único, acessível de qualquer tela pela barra lateral ou pelo atalho de teclado, que busca tutores e animais ao mesmo tempo (`GET /tutores/?q=` e `GET /animais/?q=` em paralelo) e leva direto para a tela de cada resultado. Não precisou de nenhuma rota nova: reaproveita exatamente os mesmos endpoints que as telas de lista já usavam.
+
+Como o XAMPP não estava ligado no momento em que essas cinco melhorias foram feitas, elas foram testadas de novo com o banco simulado (a mesma técnica da seção 6), e depois confirmadas com o banco de verdade assim que o MariaDB voltou a ficar disponível.
+
 ## Decisões que valem destacar (para perguntas da banca)
 
 | Decisão | Por quê |
