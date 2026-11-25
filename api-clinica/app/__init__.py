@@ -2,12 +2,14 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 
 from .config import Config
+from .json_provider import JSONProvider
 from .routes import animais, auth, cep, consultas, enderecos, especies, integracoes, microchips, racas, tutores, vacinas, veterinarios
 
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+    app.json = JSONProvider(app)  # datas sem fuso (veja app/json_provider.py)
     CORS(app)  # permite o frontend (outra porta) chamar a API
 
     # Cada módulo de rotas é um "blueprint". Para adicionar um novo,
