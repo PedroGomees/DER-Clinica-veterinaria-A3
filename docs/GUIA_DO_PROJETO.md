@@ -143,8 +143,9 @@ Roda na porta **5001**, com banco próprio (`governo_simulado`).
 
 | Item | O que é |
 |---|---|
-| `der/A3_DER_Clinica_Veterinaria.drawio` | DER editável no draw.io (versão final). |
-| `der/A3_DER_Clinica_Veterinaria.pdf` / `.png` | O mesmo DER em PDF e imagem, para o documento acadêmico. |
+| `der/A3_DER_Clinica_Veterinaria.drawio` | DER editável no draw.io (versão final) do banco da clínica. Inclui a entidade TOKEN_REVOGADO e os campos de confirmação de e-mail/payload original, pendentes de implementação pelo colega responsável por essa parte do código. |
+| `der/A3_DER_Clinica_Veterinaria.pdf` / `.png` | O mesmo DER em PDF e imagem, para o documento acadêmico. Gerar de novo a partir do `.drawio` depois da última alteração. |
+| `der/A3_DER_Governo_Simulado.drawio` | DER do banco separado `governo_simulado` (ANIMAL_REGISTRADO, VACINA_ANTIRRABICA_REGISTRADA, OPERACAO_RECEBIDA), que não aparecia no PDF original. |
 | `der/versoes-anteriores/` | Versão antiga do DER, guardada por segurança. |
 | `GUIA_DO_PROJETO.md` | Este guia. |
 | `ETAPAS_DE_DESENVOLVIMENTO.md` | Como o sistema foi construído, passo a passo. |
